@@ -1,23 +1,56 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h> //Header file for sleep(). man 3 sleep for details.
 #include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
 
-// A normal C function that is executed as a thread
-// when its name is specified in pthread_create()
-void *myThreadFun(void *vargp)
-{
-	sleep(1);
-	printf("Chanchito feli \n");
-	return NULL;
+int mails = 0;
+pthread_mutex_t mutex;
+float ranvals[200];
+int i = 0;
+
+void* randn(){
+   int base = -1;
+   int top = 1;
+   int count = 20;
+
+   //srand(17);
+   
+   for(i; i<count; i++){
+      pthread_mutex_lock(&mutex);
+      ranvals[i] = ((top - base)*((float)rand()/RAND_MAX)) + base;
+      printf("Iteration: %d Ranvals: [%d] = %f\n", i+1, i, ranvals[i]);
+      mails++;
+      pthread_mutex_unlock(&mutex);
+    }
+	int count = 0;
 }
 
-int main()
-{
-	pthread_t thread_id;
-	printf("Before Thread\n");
-	pthread_create(&thread_id, NULL, myThreadFun, NULL);
-	pthread_join(thread_id, NULL);
-	printf("After Thread\n");
-	exit(0);
+void* lowpassfilter(){
+   printf("Low pass\n");    
 }
+
+
+int main(int argc, char* argv[]){
+    pthread_t p1, p2, p3, p4;
+    srand(time(NULL));
+    pthread_mutex_init(&mutex, NULL);
+    if(pthread_create(&p1, NULL, &randn, NULL) !=0){
+        return 1;
+    }
+    if(pthread_create(&p2, NULL, &lowpassfilter, NULL) !=0){
+        return 2;
+    }
+    
+    if(pthread_join(p1, NULL) !=0){
+        return 5;
+    }
+    if(pthread_join(p2, NULL) !=0){
+        return 6;
+    }
+    pthread_mutex_destroy(&mutex);
+
+    printf("Number of mails: %d\n", mails);
+    return 0;
+
+}
+    

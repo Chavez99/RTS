@@ -123,27 +123,28 @@ void* lowpassfilter(){
         printf("\n");
     }
 }
-void create_csv(){
-    FILE *fp;
-    int x;
-
-    fp=fopen("Summaryt3.csv","w+");
-
-    fprintf(fp,"Raw,Filtered\n");
-
-    for(x = 0; x < 200; x++){
-        fprintf(fp,"%f,%f\n",total[x][0],total[x][1]);
-    }
-    fclose(fp);
-    printf("\nfile created");
-}
 
 void* exportcsv(){
-    create_csv();
+    mcsv();
 }
 
-
-
+int mcsv(void){
+    pthread_mutex_lock(&mutex);
+    FILE *ptr;
+    ptr = fopen("Test.csv", "w");
+    if(ptr = NULL){
+        printf("File error");
+        system("pause");
+        return 1;
+    }
+    fprintf(ptr, "1,2,3\n");
+    fclose(ptr);
+    ptr = 0;
+    system("pause");
+    return 0;
+    printf("Hi\n");
+    pthread_mutex_unlock(&mutex);
+}
 
 int main(int argc, char* argv[]){
     srand(time(NULL));

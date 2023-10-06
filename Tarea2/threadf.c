@@ -27,24 +27,24 @@
 
 pthread_mutex_t mutex;
 float ranvals[200];
+float lpvals[200];
+float total[200][2];
 
-float stack[LIMIT]; // Array implementation of stack
+float stack[LIMIT]; // Original random floats
+float filteredstack[LIMIT]; // Filtered data
+
 int stacktop = -1; // To insert and delete the data elements in the stack
+int fstacktop = -1;
 int j = 0; // To traverse the loop to while displaying the stack
-int choice; // To choose either of the 3 stack operations
-//stacktop = -1; // Initializing top to -1 indicates that it is empty
+int n = 0;
+float alpha = .5;
 
 void push(); // Function used to insert the element into the stack
-void pop(); // Function used to delete the element from the stack
+void fpush(); // Function used to insert the element into the stack
 void display(); // Function used to display all the elements in the stack according to LIFO rule
+void mcsv();
 
-
-void* randn(){
-   int base = -1;
-   int top = 1;
-   int count = 20;
-
-   void push(float element[]){
+void push(float element[]){
 
     if(stacktop == LIMIT- 1){
         printf("Pila llena\n");
@@ -53,10 +53,35 @@ void* randn(){
         stacktop++;
         stack[stacktop]=*element;
     }
+}
+void fpush(float felement[]){
+
+    if(fstacktop == LIMIT- 1){
+        printf("Pila llena\n");
     }
+    else{
+        fstacktop++;
+        filteredstack[fstacktop]=*felement;
+    }
+}
+void display(){
+    if(stacktop == -1){
+        printf("Stack underflow\n"); // Stack is empty
+    }
+    else if(stacktop > 0){
+        printf("The elements of the stack are:\n");
+        for(int k = stacktop; k >= 0; k--){
+            printf("%d. %f\n",k, stack[k]);
+        }
+    }
+}
+
+void* randn(){
+   int base = -1;
+   int top = 1;
+   int count = 20;
+
     printf("Number of j: %d\n", j);
-
-
     for(int i = 0; i<count; i++){
         pthread_mutex_lock(&mutex);
         ranvals[j] = ((top - base)*((float)rand()/RAND_MAX)) + base;
@@ -66,29 +91,62 @@ void* randn(){
         pthread_mutex_unlock(&mutex);
     }  
     printf("Number of j: %d\n", j); 
-        
 }
 
 void* lowpassfilter(){
-    void display(){
-        if(stacktop == -1){
-            printf("Stack underflow\n"); // Stack is empty
-        }
-        else if(stacktop > 0){
-            printf("The elements of the stack are:\n");
-        for(int k = stacktop; k >= 0; k--){
-            printf("%d. %f\n",k, stack[k]);
-        }
-        }
-    }
+    int ren = 0;
+    int col = 0;
     display();
-    printf("Low pass\n");    
+    printf("Low pass Beginning\n");  
+    for(int m = 0; m < LIMIT; m++){
+        pthread_mutex_lock(&mutex);
+        lpvals[n] = alpha*stack[n] + (1-alpha)*lpvals[n];
+        fpush(&lpvals[n]);
+        printf("Iteration: %d lpnvals: [%d] = %f\n", n+1, n, lpvals[n]);
+        n++;
+        pthread_mutex_unlock(&mutex);        
+    }
+    printf("Low pass end\n");    
+    printf("Printing in a [200][2] array both matrix\n");
+    pthread_mutex_lock(&mutex);
+    for(ren = 0; ren<200; ren++){
+        total[ren][0] = stack[ren];
+    }
+    for(ren = 0; ren<200; ren++){
+        total[ren][1] = filteredstack[ren];
+    }
+    pthread_mutex_unlock(&mutex);
+    for(ren = 0; ren < 200; ren++){
+        for(col = 0; col < 2; col++){
+            printf("%f",total[ren][col]);
+        }
+        printf("\n");
+    }
 }
 
+void* exportcsv(){
+    mcsv();
+}
+
+void mcsv(){
+    FILE *fp;
+    fp = fopen("file.csv", "w");
+    if(fp = NULL){
+        printf("File error");
+        system("pause");
+        //return 1;
+    }
+    fprintf(fp, "1,2,3\n");
+    fclose(fp);
+    fp = 0;
+    system("pause");
+    //return 0;
+    printf("Hi\n");
+}
 
 int main(int argc, char* argv[]){
     srand(time(NULL));
-    pthread_t th[11];
+    pthread_t th[12];
     
     pthread_mutex_init(&mutex, NULL);
 
@@ -109,14 +167,22 @@ int main(int argc, char* argv[]){
     }
     printf("Thread %d has started\n", 2);
     if(pthread_join(th[10], NULL) !=0){
-        return 2;
+        return 4;
     }
     printf("Thread %d has finished execution\n", 10);
+    
+    if(pthread_create(th + 11, NULL, &exportcsv, NULL) !=0){
+        perror("Failed to create the thread");
+        return 5;
+    }
+    printf("Thread %d has started\n", 2);
+    if(pthread_join(th[11], NULL) !=0){
+        return 6;
+    }
     
     pthread_mutex_destroy(&mutex);
 
     printf("Number of j: %d\n", j);
     return 0;
-
 }
     

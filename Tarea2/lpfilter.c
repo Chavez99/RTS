@@ -30,8 +30,8 @@ float ranvals[200];
 float lpvals[200];
 float total[200][2];
 
-float stack[LIMIT]; // Float implementation of stack
-float filteredstack[LIMIT]; // Float implementation of stack
+float stack[LIMIT]; // Original random floats
+float filteredstack[LIMIT]; // Filtered data
 
 int stacktop = -1; // To insert and delete the data elements in the stack
 int fstacktop = -1;
@@ -75,6 +75,23 @@ void display(){
     }
 }
 
+void* randn(){
+   int base = -1;
+   int top = 1;
+   int count = 20;
+
+    printf("Number of j: %d\n", j);
+    for(int i = 0; i<count; i++){
+        pthread_mutex_lock(&mutex);
+        ranvals[j] = ((top - base)*((float)rand()/RAND_MAX)) + base;
+        push(&ranvals[j]);
+        printf("Iteration: %d Ranvals: [%d] = %f\n", j+1, j, ranvals[j]);
+        j++;
+        pthread_mutex_unlock(&mutex);
+    }  
+    printf("Number of j: %d\n", j); 
+}
+
 void* lowpassfilter(){
     int ren = 0;
     int col = 0;
@@ -106,28 +123,15 @@ void* lowpassfilter(){
     }
 }
 
-void* randn(){
-   int base = -1;
-   int top = 1;
-   int count = 20;
+void* exportcsv(){
 
-    printf("Number of j: %d\n", j);
-    for(int i = 0; i<count; i++){
-        pthread_mutex_lock(&mutex);
-        ranvals[j] = ((top - base)*((float)rand()/RAND_MAX)) + base;
-        push(&ranvals[j]);
-        printf("Iteration: %d Ranvals: [%d] = %f\n", j+1, j, ranvals[j]);
-        j++;
-        pthread_mutex_unlock(&mutex);
-    }  
-    printf("Number of j: %d\n", j); 
+    printf("Hi\n");
+
 }
-
-
 
 int main(int argc, char* argv[]){
     srand(time(NULL));
-    pthread_t th[11];
+    pthread_t th[12];
     
     pthread_mutex_init(&mutex, NULL);
 
@@ -148,9 +152,18 @@ int main(int argc, char* argv[]){
     }
     printf("Thread %d has started\n", 2);
     if(pthread_join(th[10], NULL) !=0){
-        return 2;
+        return 4;
     }
     printf("Thread %d has finished execution\n", 10);
+    
+    if(pthread_create(th + 11, NULL, &exportcsv, NULL) !=0){
+        perror("Failed to create the thread");
+        return 5;
+    }
+    printf("Thread %d has started\n", 2);
+    if(pthread_join(th[11], NULL) !=0){
+        return 6;
+    }
     
     pthread_mutex_destroy(&mutex);
 
